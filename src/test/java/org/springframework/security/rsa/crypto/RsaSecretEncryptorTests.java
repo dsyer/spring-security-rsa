@@ -27,9 +27,9 @@ import org.junit.Test;
  * @author Dave Syer
  *
  */
-public class RsaEncryptorTests {
+public class RsaSecretEncryptorTests {
 
-	private RsaEncryptor encryptor = new RsaEncryptor();
+	private RsaSecretEncryptor encryptor = new RsaSecretEncryptor();
 
 	@Before
 	public void init() {
