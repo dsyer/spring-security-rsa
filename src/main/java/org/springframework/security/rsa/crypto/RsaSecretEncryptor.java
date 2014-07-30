@@ -17,6 +17,7 @@ package org.springframework.security.rsa.crypto;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -116,7 +117,7 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 			byte[] secret = cipher.doFinal(random);
 			ByteArrayOutputStream result = new ByteArrayOutputStream(
 					text.length + 20);
-			result.write(secret.length);
+			writeInt(result, secret.length);
 			result.write(secret);
 			result.write(Encryptors.standard(new String(Hex.encode(random)), SALT).encrypt(text));
 			return result.toByteArray();
@@ -127,17 +128,30 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 		}
 	}
 
+	private static void writeInt(ByteArrayOutputStream result, int length) throws IOException {
+		byte[] data = new byte[2];
+		data[0] = (byte) ((length >> 8) & 0xFF);
+		data[1] = (byte) (length & 0xFF);
+		result.write(data);
+	}
+
+	private static int readInt(ByteArrayInputStream result) throws IOException {
+		byte[] b = new byte[2];
+		result.read(b);
+		return ((b[0] & 0xFF) << 8) | (b[1] & 0xFF);
+	}
+
 	private static byte[] decrypt(byte[] text, PrivateKey key) {
 		ByteArrayInputStream input = new ByteArrayInputStream(text);
 		ByteArrayOutputStream output = new ByteArrayOutputStream(text.length);
 		try {
-			int length = input.read();
+			int length = readInt(input);
 			byte[] random = new byte[length];
 			input.read(random);
 			final Cipher cipher = Cipher.getInstance(ALGORITHM);
 			cipher.init(Cipher.DECRYPT_MODE, key);
 			String secret = new String(Hex.encode(cipher.doFinal(random)));
-			byte[] buffer = new byte[text.length - random.length - 1];
+			byte[] buffer = new byte[text.length - random.length - 2];
 			input.read(buffer);
 			output.write(Encryptors.standard(secret, SALT).decrypt(buffer));
 			return output.toByteArray();
