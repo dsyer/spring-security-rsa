@@ -54,6 +54,21 @@ public class RsaSecretEncryptorTests {
 	}
 
 	@Test
+	public void roundTripWithPublicKeyEncryption() {
+		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(this.encryptor.getPublicKey());
+		RsaSecretEncryptor decryptor = this.encryptor;
+		assertEquals("encryptor",
+				decryptor.decrypt(encryptor.encrypt("encryptor")));
+	}
+
+	@Test(expected = IllegalStateException.class)
+	public void publicKeyCannotDecrypt() {
+		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(this.encryptor.getPublicKey());
+		assertEquals("encryptor",
+				encryptor.decrypt(encryptor.encrypt("encryptor")));
+	}
+
+	@Test
 	public void roundTripLongString() {
 		assertEquals(LONG_STRING,
 				encryptor.decrypt(encryptor.encrypt(LONG_STRING)));

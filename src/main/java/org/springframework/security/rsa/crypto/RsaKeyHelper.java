@@ -64,7 +64,11 @@ class RsaKeyHelper {
 		Matcher m = PEM_DATA.matcher(pemData.trim());
 
 		if (!m.matches()) {
-			throw new IllegalArgumentException("String is not PEM encoded data");
+			try {
+				return new KeyPair(extractPublicKey(pemData), null);
+			} catch (Exception e) {
+				throw new IllegalArgumentException("String is not PEM encoded data, nor a public key encoded for ssh");
+			}
 		}
 
 		String type = m.group(1);
@@ -150,7 +154,8 @@ class RsaKeyHelper {
 	private static final Pattern SSH_PUB_KEY = Pattern
 			.compile("ssh-(rsa|dsa) ([A-Za-z0-9/+]+=*) (.*)");
 
-	static RSAPublicKey parsePublicKey(String key) {
+	private static RSAPublicKey extractPublicKey(String key) {
+
 		Matcher m = SSH_PUB_KEY.matcher(key);
 
 		if (m.matches()) {
@@ -171,6 +176,17 @@ class RsaKeyHelper {
 			return parseSSHPublicKey(key);
 		}
 
+		return null;
+	}
+
+	static RSAPublicKey parsePublicKey(String key) {
+		
+		RSAPublicKey publicKey = extractPublicKey(key);
+		
+		if (publicKey!=null) {
+			return publicKey;
+		}
+
 		KeyPair kp = parseKeyPair(key);
 
 		if (kp.getPublic() == null) {
@@ -179,6 +195,7 @@ class RsaKeyHelper {
 		}
 
 		return (RSAPublicKey) kp.getPublic();
+
 	}
 
 	static String encodePublicKey(RSAPublicKey key, String id) {
