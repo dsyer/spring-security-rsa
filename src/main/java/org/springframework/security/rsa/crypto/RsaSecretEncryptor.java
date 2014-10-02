@@ -111,6 +111,7 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 
 	private static byte[] encrypt(byte[] text, PublicKey key) {
 		byte[] random = KeyGenerators.secureRandom(16).generateKey();
+		BytesEncryptor aes = Encryptors.standard(new String(Hex.encode(random)), SALT);
 		try {
 			final Cipher cipher = Cipher.getInstance(ALGORITHM);
 			cipher.init(Cipher.ENCRYPT_MODE, key);
@@ -119,7 +120,7 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 					text.length + 20);
 			writeInt(result, secret.length);
 			result.write(secret);
-			result.write(Encryptors.standard(new String(Hex.encode(random)), SALT).encrypt(text));
+			result.write(aes.encrypt(text));
 			return result.toByteArray();
 		} catch (RuntimeException e) {
 			throw e;

@@ -29,3 +29,9 @@ encryption on the whole message. We recommend the
 N.B. if you need RSA signing and verification there are utilities
 already available in
 [spring-security-jwt](https://github.com/spring-projects/spring-security-oauth/tree/master/spring-security-jwt).
+
+**Important Prerequisites:** to use Spring Security RSA
+you need the full-strength JCE installed in your JVM (it's not there by default).
+You can download the "Java Cryptography Extension (JCE) Unlimited Strength Jurisdiction Policy Files"
+from Oracle, and follow instructions for installation (essentially replace the 2 policy files
+in the JRE lib/security directory with the ones that you downloaded).
