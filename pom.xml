@@ -5,7 +5,7 @@
 
 	<groupId>org.springframework.security</groupId>
 	<artifactId>spring-security-rsa</artifactId>
-	<version>1.0.0.BUILD-SNAPSHOT</version>
+	<version>1.0.0.RELEASE</version>
 	<packaging>jar</packaging>
 	<name>spring-security-rsa</name>
 
@@ -29,7 +29,7 @@
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-crypto</artifactId>
-			<version>3.2.4.RELEASE</version>
+			<version>3.2.5.RELEASE</version>
 		</dependency>
 
 		<dependency>
@@ -126,15 +126,14 @@
 		</site>
 
 		<repository>
-			<id>springframework-release</id>
+			<id>repo.spring.io</id>
 			<name>Spring Release Repository</name>
-			<url>s3://maven.springframework.org/release</url>
+			<url>https://repo.spring.io/libs-release-local</url>
 		</repository>
-
 		<snapshotRepository>
-			<id>springframework-snapshot</id>
+			<id>repo.spring.io</id>
 			<name>Spring Snapshot Repository</name>
-			<url>s3://maven.springframework.org/snapshot</url>
+			<url>https://repo.spring.io/libs-snapshot-local</url>
 		</snapshotRepository>
 
 	</distributionManagement>
