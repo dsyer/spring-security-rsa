@@ -40,12 +40,12 @@ import org.springframework.util.Assert;
  */
 public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHolder {
 
-	public static final String ALGORITHM = "RSA";
-
 	private static final String DEFAULT_ENCODING = "UTF-8";
 
 	// The secret for encryption is random (so dictionary attack is not a danger)
 	private static final String SALT = "deadbeef";
+
+	private RsaAlgorithm algorithm = RsaAlgorithm.DEFAULT;
 
 	private Charset charset;
 
@@ -55,81 +55,100 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 
 	private Charset defaultCharset;
 
+	public RsaSecretEncryptor(RsaAlgorithm algorithm) {
+		this(RsaKeyHelper.generateKeyPair(), algorithm);
+	}
+
 	public RsaSecretEncryptor() {
 		this(RsaKeyHelper.generateKeyPair());
+	}
+
+	public RsaSecretEncryptor(KeyPair keyPair, RsaAlgorithm algorithm) {
+		this(DEFAULT_ENCODING, keyPair.getPublic(), keyPair.getPrivate(), algorithm);
 	}
 
 	public RsaSecretEncryptor(KeyPair keyPair) {
 		this(DEFAULT_ENCODING, keyPair.getPublic(), keyPair.getPrivate());
 	}
 
+	public RsaSecretEncryptor(String pemData, RsaAlgorithm algorithm) {
+		this(RsaKeyHelper.parseKeyPair(pemData),algorithm);
+	}
+
 	public RsaSecretEncryptor(String pemData) {
 		this(RsaKeyHelper.parseKeyPair(pemData));
+	}
+
+	public RsaSecretEncryptor(PublicKey publicKey, RsaAlgorithm algorithm) {
+		this(DEFAULT_ENCODING, publicKey, null, algorithm);
 	}
 
 	public RsaSecretEncryptor(PublicKey publicKey) {
 		this(DEFAULT_ENCODING, publicKey, null);
 	}
 
-	public RsaSecretEncryptor(String encoding, PublicKey publicKey,
-			PrivateKey privateKey) {
+	public RsaSecretEncryptor(String encoding, PublicKey publicKey, PrivateKey privateKey) {
+		this(encoding, publicKey, privateKey, RsaAlgorithm.DEFAULT);
+	}
+
+	public RsaSecretEncryptor(String encoding, PublicKey publicKey, PrivateKey privateKey, RsaAlgorithm algorithm) {
 		this.charset = Charset.forName(encoding);
 		this.publicKey = publicKey;
 		this.privateKey = privateKey;
 		this.defaultCharset = Charset.forName(DEFAULT_ENCODING);
+		this.algorithm = algorithm;
 	}
 
 	@Override
 	public String getPublicKey() {
-		return RsaKeyHelper.encodePublicKey((RSAPublicKey) publicKey,
-				"application");
+		return RsaKeyHelper.encodePublicKey((RSAPublicKey) this.publicKey, "application");
 	}
 
 	@Override
 	public String encrypt(String text) {
-		return new String(Base64.encode(encrypt(text.getBytes(charset))),
-				defaultCharset);
+		return new String(Base64.encode(encrypt(text.getBytes(this.charset))), this.defaultCharset);
 	}
 
 	@Override
 	public String decrypt(String encryptedText) {
-		Assert.state(privateKey != null,
-				"Private key must be provided for decryption");
-		return new String(decrypt(Base64.decode(encryptedText
-				.getBytes(defaultCharset))), charset);
+		Assert.state(this.privateKey != null, "Private key must be provided for decryption");
+		return new String(decrypt(Base64.decode(encryptedText.getBytes(this.defaultCharset))),
+				this.charset);
 	}
 
 	@Override
 	public byte[] encrypt(byte[] byteArray) {
-		return encrypt(byteArray, publicKey);
+		return encrypt(byteArray, this.publicKey, this.algorithm);
 	}
 
 	@Override
 	public byte[] decrypt(byte[] encryptedByteArray) {
-		return decrypt(encryptedByteArray, privateKey);
+		return decrypt(encryptedByteArray, this.privateKey, this.algorithm);
 	}
 
-	private static byte[] encrypt(byte[] text, PublicKey key) {
+	private static byte[] encrypt(byte[] text, PublicKey key, RsaAlgorithm alg) {
 		byte[] random = KeyGenerators.secureRandom(16).generateKey();
 		BytesEncryptor aes = Encryptors.standard(new String(Hex.encode(random)), SALT);
 		try {
-			final Cipher cipher = Cipher.getInstance(ALGORITHM);
+			final Cipher cipher = Cipher.getInstance(alg.getJceName());
 			cipher.init(Cipher.ENCRYPT_MODE, key);
 			byte[] secret = cipher.doFinal(random);
-			ByteArrayOutputStream result = new ByteArrayOutputStream(
-					text.length + 20);
+			ByteArrayOutputStream result = new ByteArrayOutputStream(text.length + 20);
 			writeInt(result, secret.length);
 			result.write(secret);
 			result.write(aes.encrypt(text));
 			return result.toByteArray();
-		} catch (RuntimeException e) {
+		}
+		catch (RuntimeException e) {
 			throw e;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new IllegalStateException("Cannot encrypt", e);
 		}
 	}
 
-	private static void writeInt(ByteArrayOutputStream result, int length) throws IOException {
+	private static void writeInt(ByteArrayOutputStream result, int length)
+			throws IOException {
 		byte[] data = new byte[2];
 		data[0] = (byte) ((length >> 8) & 0xFF);
 		data[1] = (byte) (length & 0xFF);
@@ -142,23 +161,25 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 		return ((b[0] & 0xFF) << 8) | (b[1] & 0xFF);
 	}
 
-	private static byte[] decrypt(byte[] text, PrivateKey key) {
+	private static byte[] decrypt(byte[] text, PrivateKey key, RsaAlgorithm alg) {
 		ByteArrayInputStream input = new ByteArrayInputStream(text);
 		ByteArrayOutputStream output = new ByteArrayOutputStream(text.length);
 		try {
 			int length = readInt(input);
 			byte[] random = new byte[length];
 			input.read(random);
-			final Cipher cipher = Cipher.getInstance(ALGORITHM);
+			final Cipher cipher = Cipher.getInstance(alg.getJceName());
 			cipher.init(Cipher.DECRYPT_MODE, key);
 			String secret = new String(Hex.encode(cipher.doFinal(random)));
 			byte[] buffer = new byte[text.length - random.length - 2];
 			input.read(buffer);
 			output.write(Encryptors.standard(secret, SALT).decrypt(buffer));
 			return output.toByteArray();
-		} catch (RuntimeException e) {
+		}
+		catch (RuntimeException e) {
 			throw e;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new IllegalStateException("Cannot decrypt", e);
 		}
 	}

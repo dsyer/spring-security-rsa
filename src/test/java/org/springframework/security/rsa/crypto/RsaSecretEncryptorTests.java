@@ -42,36 +42,48 @@ public class RsaSecretEncryptorTests {
 	@Test
 	public void roundTripKey() {
 		PublicKey key = RsaKeyHelper.generateKeyPair().getPublic();
-		String encoded = RsaKeyHelper.encodePublicKey((RSAPublicKey) key,
-				"application");
+		String encoded = RsaKeyHelper.encodePublicKey((RSAPublicKey) key, "application");
 		assertEquals(key, RsaKeyHelper.parsePublicKey(encoded));
 	}
 
 	@Test
 	public void roundTrip() {
 		assertEquals("encryptor",
-				encryptor.decrypt(encryptor.encrypt("encryptor")));
+				this.encryptor.decrypt(this.encryptor.encrypt("encryptor")));
+	}
+
+	@Test
+	public void roundTripOaep() {
+		this.encryptor = new RsaSecretEncryptor(RsaAlgorithm.OAEP);
+		assertEquals("encryptor",
+				this.encryptor.decrypt(this.encryptor.encrypt("encryptor")));
+	}
+
+	@Test(expected=IllegalStateException.class)
+	public void roundTripWithMixedAlgorithm() {
+		RsaSecretEncryptor oaep = new RsaSecretEncryptor(RsaAlgorithm.OAEP);
+		assertEquals("encryptor", oaep.decrypt(this.encryptor.encrypt("encryptor")));
 	}
 
 	@Test
 	public void roundTripWithPublicKeyEncryption() {
-		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(this.encryptor.getPublicKey());
+		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(
+				this.encryptor.getPublicKey());
 		RsaSecretEncryptor decryptor = this.encryptor;
-		assertEquals("encryptor",
-				decryptor.decrypt(encryptor.encrypt("encryptor")));
+		assertEquals("encryptor", decryptor.decrypt(encryptor.encrypt("encryptor")));
 	}
 
 	@Test(expected = IllegalStateException.class)
 	public void publicKeyCannotDecrypt() {
-		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(this.encryptor.getPublicKey());
-		assertEquals("encryptor",
-				encryptor.decrypt(encryptor.encrypt("encryptor")));
+		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(
+				this.encryptor.getPublicKey());
+		assertEquals("encryptor", encryptor.decrypt(encryptor.encrypt("encryptor")));
 	}
 
 	@Test
 	public void roundTripLongString() {
 		assertEquals(LONG_STRING,
-				encryptor.decrypt(encryptor.encrypt(LONG_STRING)));
+				this.encryptor.decrypt(this.encryptor.encrypt(LONG_STRING)));
 	}
 
 	private static final String SHORT_STRING = "Bacon ipsum dolor sit amet tail pork loin pork chop filet mignon flank fatback tenderloin boudin shankle corned beef t-bone short ribs. Meatball capicola ball tip short loin beef ribs shoulder, kielbasa pork chop meatloaf biltong porchetta bresaola t-bone spare ribs. Andouille t-bone sausage ground round frankfurter venison. Ground round meatball chicken ribeye doner tongue porchetta.";

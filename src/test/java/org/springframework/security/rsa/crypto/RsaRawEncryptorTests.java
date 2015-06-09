@@ -39,13 +39,27 @@ public class RsaRawEncryptorTests {
 	@Test
 	public void roundTrip() {
 		assertEquals("encryptor",
-				encryptor.decrypt(encryptor.encrypt("encryptor")));
+				this.encryptor.decrypt(this.encryptor.encrypt("encryptor")));
+	}
+
+	@Test
+	public void roundTripOeap() {
+		this.encryptor = new RsaRawEncryptor(RsaAlgorithm.OAEP);
+		assertEquals("encryptor",
+				this.encryptor.decrypt(this.encryptor.encrypt("encryptor")));
 	}
 
 	@Test
 	public void roundTripLongString() {
 		assertEquals(LONG_STRING,
-				encryptor.decrypt(encryptor.encrypt(LONG_STRING)));
+				this.encryptor.decrypt(this.encryptor.encrypt(LONG_STRING)));
+	}
+
+	@Test
+	public void roundTripLongStringOeap() {
+		this.encryptor = new RsaRawEncryptor(RsaAlgorithm.OAEP);
+		assertEquals(LONG_STRING,
+				this.encryptor.decrypt(this.encryptor.encrypt(LONG_STRING)));
 	}
 
 	private static final String SHORT_STRING = "Bacon ipsum dolor sit amet tail pork loin pork chop filet mignon flank fatback tenderloin boudin shankle corned beef t-bone short ribs. Meatball capicola ball tip short loin beef ribs shoulder, kielbasa pork chop meatloaf biltong porchetta bresaola t-bone spare ribs. Andouille t-bone sausage ground round frankfurter venison. Ground round meatball chicken ribeye doner tongue porchetta.";

@@ -35,9 +35,9 @@ import org.springframework.util.Assert;
  */
 public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHolder {
 
-	public static final String ALGORITHM = "RSA";
-
 	private static final String DEFAULT_ENCODING = "UTF-8";
+
+	private RsaAlgorithm algorithm = RsaAlgorithm.DEFAULT;
 
 	private Charset charset;
 
@@ -47,8 +47,16 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 
 	private Charset defaultCharset;
 
+	public RsaRawEncryptor(RsaAlgorithm algorithm) {
+		this(RsaKeyHelper.generateKeyPair(), algorithm);
+	}
+
 	public RsaRawEncryptor() {
 		this(RsaKeyHelper.generateKeyPair());
+	}
+
+	public RsaRawEncryptor(KeyPair keyPair, RsaAlgorithm algorithm) {
+		this(DEFAULT_ENCODING, keyPair.getPublic(), keyPair.getPrivate(), algorithm);
 	}
 
 	public RsaRawEncryptor(KeyPair keyPair) {
@@ -62,69 +70,77 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 	public RsaRawEncryptor(PublicKey publicKey) {
 		this(DEFAULT_ENCODING, publicKey, null);
 	}
-	
-	public RsaRawEncryptor(String encoding, PublicKey publicKey,
-			PrivateKey privateKey) {
+
+	public RsaRawEncryptor(String encoding, PublicKey publicKey, PrivateKey privateKey) {
+		this(encoding, publicKey, privateKey, RsaAlgorithm.DEFAULT);
+	}
+
+	public RsaRawEncryptor(String encoding, PublicKey publicKey, PrivateKey privateKey,
+			RsaAlgorithm algorithm) {
 		this.charset = Charset.forName(encoding);
 		this.publicKey = publicKey;
 		this.privateKey = privateKey;
 		this.defaultCharset = Charset.forName(DEFAULT_ENCODING);
+		this.algorithm = algorithm;
 	}
-	
+
 	@Override
 	public String getPublicKey() {
-		return RsaKeyHelper.encodePublicKey((RSAPublicKey) publicKey, "application");
+		return RsaKeyHelper.encodePublicKey((RSAPublicKey) this.publicKey, "application");
 	}
 
 	@Override
 	public String encrypt(String text) {
-		return new String(Base64.encode(encrypt(text.getBytes(charset))),
-				defaultCharset);
+		return new String(Base64.encode(encrypt(text.getBytes(this.charset))),
+				this.defaultCharset);
 	}
 
 	@Override
 	public String decrypt(String encryptedText) {
-		Assert.state(privateKey!=null, "Private key must be provided for decryption");
+		Assert.state(this.privateKey != null,
+				"Private key must be provided for decryption");
 		return new String(decrypt(Base64.decode(encryptedText
-				.getBytes(defaultCharset))), charset);
+				.getBytes(this.defaultCharset))), this.charset);
 	}
 
 	@Override
 	public byte[] encrypt(byte[] byteArray) {
-		return encrypt(byteArray, publicKey);
+		return encrypt(byteArray, this.publicKey, this.algorithm);
 	}
 
 	@Override
 	public byte[] decrypt(byte[] encryptedByteArray) {
-		return decrypt(encryptedByteArray, privateKey);
+		return decrypt(encryptedByteArray, this.privateKey, this.algorithm);
 	}
 
-	private static byte[] encrypt(byte[] text, PublicKey key) {
+	private static byte[] encrypt(byte[] text, PublicKey key, RsaAlgorithm alg) {
 		ByteArrayOutputStream output = new ByteArrayOutputStream(text.length);
 		try {
-			final Cipher cipher = Cipher.getInstance(ALGORITHM);
-			int limit = Math.min(text.length, 117);
+			final Cipher cipher = Cipher.getInstance(alg.getJceName());
+			int limit = Math.min(text.length, alg.getMaxLength());
 			int pos = 0;
 			while (pos < text.length) {
 				cipher.init(Cipher.ENCRYPT_MODE, key);
 				cipher.update(text, pos, limit);
 				pos += limit;
-				limit = Math.min(text.length - pos, 117);
+				limit = Math.min(text.length - pos, alg.getMaxLength());
 				byte[] buffer = cipher.doFinal();
 				output.write(buffer, 0, buffer.length);
 			}
 			return output.toByteArray();
-		} catch (RuntimeException e) {
+		}
+		catch (RuntimeException e) {
 			throw e;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new IllegalStateException("Cannot encrypt", e);
 		}
 	}
 
-	private static byte[] decrypt(byte[] text, PrivateKey key) {
+	private static byte[] decrypt(byte[] text, PrivateKey key, RsaAlgorithm alg) {
 		ByteArrayOutputStream output = new ByteArrayOutputStream(text.length);
 		try {
-			final Cipher cipher = Cipher.getInstance(ALGORITHM);
+			final Cipher cipher = Cipher.getInstance(alg.getJceName());
 			int limit = Math.min(text.length, 128);
 			int pos = 0;
 			while (pos < text.length) {
@@ -136,9 +152,11 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 				output.write(buffer, 0, buffer.length);
 			}
 			return output.toByteArray();
-		} catch (RuntimeException e) {
+		}
+		catch (RuntimeException e) {
 			throw e;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new IllegalStateException("Cannot decrypt", e);
 		}
 	}
