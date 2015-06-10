@@ -53,6 +53,27 @@ public class RsaSecretEncryptorTests {
 	}
 
 	@Test
+	public void roundTripWithSalt() {
+		this.encryptor = new RsaSecretEncryptor(RsaAlgorithm.OAEP, "somesalt");
+		assertEquals("encryptor",
+				this.encryptor.decrypt(this.encryptor.encrypt("encryptor")));
+	}
+
+	@Test
+	public void roundTripWithHexSalt() {
+		this.encryptor = new RsaSecretEncryptor(RsaAlgorithm.OAEP, "beefea");
+		assertEquals("encryptor",
+				this.encryptor.decrypt(this.encryptor.encrypt("encryptor")));
+	}
+
+	@Test
+	public void roundTripWithLongSalt() {
+		this.encryptor = new RsaSecretEncryptor(RsaAlgorithm.OAEP, "somesaltsomesaltsomesaltsomesaltsomesalt");
+		assertEquals("encryptor",
+				this.encryptor.decrypt(this.encryptor.encrypt("encryptor")));
+	}
+
+	@Test
 	public void roundTripOaep() {
 		this.encryptor = new RsaSecretEncryptor(RsaAlgorithm.OAEP);
 		assertEquals("encryptor",
@@ -63,6 +84,12 @@ public class RsaSecretEncryptorTests {
 	public void roundTripWithMixedAlgorithm() {
 		RsaSecretEncryptor oaep = new RsaSecretEncryptor(RsaAlgorithm.OAEP);
 		assertEquals("encryptor", oaep.decrypt(this.encryptor.encrypt("encryptor")));
+	}
+
+	@Test(expected=IllegalStateException.class)
+	public void roundTripWithMixedSalt() {
+		RsaSecretEncryptor other = new RsaSecretEncryptor(this.encryptor.getPublicKey(), RsaAlgorithm.DEFAULT, "salt");
+		assertEquals("encryptor", this.encryptor.decrypt(other.encrypt("encryptor")));
 	}
 
 	@Test
