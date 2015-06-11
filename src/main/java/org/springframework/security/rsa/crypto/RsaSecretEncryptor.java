@@ -29,7 +29,6 @@ import javax.crypto.Cipher;
 import org.springframework.security.crypto.codec.Base64;
 import org.springframework.security.crypto.codec.Hex;
 import org.springframework.security.crypto.encrypt.BytesEncryptor;
-import org.springframework.security.crypto.encrypt.Encryptors;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.security.crypto.keygen.KeyGenerators;
 import org.springframework.util.Assert;
@@ -45,7 +44,7 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 	// The secret for encryption is random (so dictionary attack is not a danger)
 	private final static String DEFAULT_SALT = "deadbeef";
 
-	private final String salt;
+	private String salt;
 
 	private RsaAlgorithm algorithm = RsaAlgorithm.DEFAULT;
 
@@ -57,8 +56,18 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 
 	private Charset defaultCharset;
 
+	private boolean gcm;
+
+	public RsaSecretEncryptor(RsaAlgorithm algorithm, String salt, boolean gcm) {
+		this(RsaKeyHelper.generateKeyPair(), algorithm, salt, gcm);
+	}
+
 	public RsaSecretEncryptor(RsaAlgorithm algorithm, String salt) {
 		this(RsaKeyHelper.generateKeyPair(), algorithm, salt);
+	}
+
+	public RsaSecretEncryptor(RsaAlgorithm algorithm, boolean gcm) {
+		this(RsaKeyHelper.generateKeyPair(), algorithm, DEFAULT_SALT, gcm);
 	}
 
 	public RsaSecretEncryptor(RsaAlgorithm algorithm) {
@@ -69,8 +78,15 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 		this(RsaKeyHelper.generateKeyPair());
 	}
 
+	public RsaSecretEncryptor(KeyPair keyPair, RsaAlgorithm algorithm, String salt,
+			boolean gcm) {
+		this(DEFAULT_ENCODING, keyPair.getPublic(), keyPair.getPrivate(), algorithm,
+				salt, gcm);
+	}
+
 	public RsaSecretEncryptor(KeyPair keyPair, RsaAlgorithm algorithm, String salt) {
-		this(DEFAULT_ENCODING, keyPair.getPublic(), keyPair.getPrivate(), algorithm, salt);
+		this(DEFAULT_ENCODING, keyPair.getPublic(), keyPair.getPrivate(), algorithm,
+				salt, false);
 	}
 
 	public RsaSecretEncryptor(KeyPair keyPair, RsaAlgorithm algorithm) {
@@ -93,8 +109,13 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 		this(RsaKeyHelper.parseKeyPair(pemData));
 	}
 
+	public RsaSecretEncryptor(PublicKey publicKey, RsaAlgorithm algorithm, String salt,
+			boolean gcm) {
+		this(DEFAULT_ENCODING, publicKey, null, algorithm, salt, gcm);
+	}
+
 	public RsaSecretEncryptor(PublicKey publicKey, RsaAlgorithm algorithm, String salt) {
-		this(DEFAULT_ENCODING, publicKey, null, algorithm, salt);
+		this(DEFAULT_ENCODING, publicKey, null, algorithm, salt, false);
 	}
 
 	public RsaSecretEncryptor(PublicKey publicKey, RsaAlgorithm algorithm) {
@@ -111,17 +132,19 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 
 	public RsaSecretEncryptor(String encoding, PublicKey publicKey,
 			PrivateKey privateKey, RsaAlgorithm algorithm) {
-		this(encoding, publicKey, privateKey, algorithm, DEFAULT_SALT);
+		this(encoding, publicKey, privateKey, algorithm, DEFAULT_SALT, false);
 	}
 
 	public RsaSecretEncryptor(String encoding, PublicKey publicKey,
-			PrivateKey privateKey, RsaAlgorithm algorithm, String salt) {
+			PrivateKey privateKey, RsaAlgorithm algorithm, String salt, boolean gcm) {
 		this.charset = Charset.forName(encoding);
 		this.publicKey = publicKey;
 		this.privateKey = privateKey;
 		this.defaultCharset = Charset.forName(DEFAULT_ENCODING);
 		this.algorithm = algorithm;
-		this.salt = isHex(salt) ? salt : new String(Hex.encode(salt.getBytes(this.defaultCharset)));
+		this.salt = isHex(salt) ? salt : new String(Hex.encode(salt
+				.getBytes(this.defaultCharset)));
+		this.gcm = gcm;
 	}
 
 	@Override
@@ -145,18 +168,20 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 
 	@Override
 	public byte[] encrypt(byte[] byteArray) {
-		return encrypt(byteArray, this.publicKey, this.algorithm, this.salt);
+		return encrypt(byteArray, this.publicKey, this.algorithm, this.salt, this.gcm);
 	}
 
 	@Override
 	public byte[] decrypt(byte[] encryptedByteArray) {
-		return decrypt(encryptedByteArray, this.privateKey, this.algorithm, this.salt);
+		return decrypt(encryptedByteArray, this.privateKey, this.algorithm, this.salt,
+				this.gcm);
 	}
 
 	private static byte[] encrypt(byte[] text, PublicKey key, RsaAlgorithm alg,
-			String salt) {
+			String salt, boolean gcm) {
 		byte[] random = KeyGenerators.secureRandom(16).generateKey();
-		BytesEncryptor aes = Encryptors.standard(new String(Hex.encode(random)), salt);
+		BytesEncryptor aes = gcm ? Encryptors.stronger(new String(Hex.encode(random)),
+				salt) : Encryptors.standard(new String(Hex.encode(random)), salt);
 		try {
 			final Cipher cipher = Cipher.getInstance(alg.getJceName());
 			cipher.init(Cipher.ENCRYPT_MODE, key);
@@ -190,7 +215,7 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 	}
 
 	private static byte[] decrypt(byte[] text, PrivateKey key, RsaAlgorithm alg,
-			String salt) {
+			String salt, boolean gcm) {
 		ByteArrayInputStream input = new ByteArrayInputStream(text);
 		ByteArrayOutputStream output = new ByteArrayOutputStream(text.length);
 		try {
@@ -202,7 +227,9 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 			String secret = new String(Hex.encode(cipher.doFinal(random)));
 			byte[] buffer = new byte[text.length - random.length - 2];
 			input.read(buffer);
-			output.write(Encryptors.standard(secret, salt).decrypt(buffer));
+			BytesEncryptor aes = gcm ? Encryptors.stronger(secret, salt) : Encryptors
+					.standard(secret, salt);
+			output.write(aes.decrypt(buffer));
 			return output.toByteArray();
 		}
 		catch (RuntimeException e) {
@@ -217,7 +244,8 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 		try {
 			Hex.decode(input);
 			return true;
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			return false;
 		}
 	}

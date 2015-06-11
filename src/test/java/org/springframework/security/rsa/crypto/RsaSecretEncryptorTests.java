@@ -80,6 +80,13 @@ public class RsaSecretEncryptorTests {
 				this.encryptor.decrypt(this.encryptor.encrypt("encryptor")));
 	}
 
+	@Test
+	public void roundTripOaepGcm() {
+		this.encryptor = new RsaSecretEncryptor(RsaAlgorithm.OAEP, true);
+		assertEquals("encryptor",
+				this.encryptor.decrypt(this.encryptor.encrypt("encryptor")));
+	}
+
 	@Test(expected=IllegalStateException.class)
 	public void roundTripWithMixedAlgorithm() {
 		RsaSecretEncryptor oaep = new RsaSecretEncryptor(RsaAlgorithm.OAEP);
