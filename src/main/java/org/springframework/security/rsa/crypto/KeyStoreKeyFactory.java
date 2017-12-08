@@ -35,9 +35,14 @@ public class KeyStoreKeyFactory {
 	private KeyStore store;
 	private Object lock = new Object();
 
-	public KeyStoreKeyFactory(Resource resource, char[] password) {
+	public KeyStoreKeyFactory(KeyStore store, Resource resource, char[] password) {
+		this.store = store;
 		this.resource = resource;
 		this.password = password;
+	}
+
+	public KeyStoreKeyFactory(Resource resource, char[] password) {
+		this(null, resource, password);
 	}
 
 	public KeyPair getKeyPair(String alias) {
@@ -52,6 +57,8 @@ public class KeyStoreKeyFactory {
 						store = KeyStore.getInstance("jks");
 						store.load(resource.getInputStream(), this.password);
 					}
+				} else {
+					store.load(resource.getInputStream(), this.password);
 				}
 			}
 			RSAPrivateCrtKey key = (RSAPrivateCrtKey) store.getKey(alias, password);

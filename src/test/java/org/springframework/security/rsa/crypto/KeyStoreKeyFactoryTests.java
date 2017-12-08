@@ -20,6 +20,8 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
+import java.security.KeyStore;
+
 /**
  * @author Dave Syer
  *
@@ -34,4 +36,12 @@ public class KeyStoreKeyFactoryTests {
 		assertEquals("foo", encryptor.decrypt(encryptor.encrypt("foo")));
 	}
 
+	@Test
+	public void initializeEncryptorFromKeyStoreWithCustomKeyStore() throws Exception {
+		char[] password = "foobar".toCharArray();
+		KeyStore keyStore = KeyStore.getInstance("jceks");
+		KeyStoreKeyFactory factory = new KeyStoreKeyFactory(keyStore, new ClassPathResource("keystore.jceks"), password);
+		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(factory.getKeyPair("test"));
+		assertEquals("foo", encryptor.decrypt(encryptor.encrypt("foo")));
+	}
 }
