@@ -15,10 +15,11 @@
  */
 package org.springframework.security.rsa.crypto;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
+
 import org.springframework.core.io.ClassPathResource;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Dave Syer
@@ -29,8 +30,19 @@ public class KeyStoreKeyFactoryTests {
 	@Test
 	public void initializeEncryptorFromKeyStore() throws Exception {
 		char[] password = "foobar".toCharArray();
-		KeyStoreKeyFactory factory = new KeyStoreKeyFactory(new ClassPathResource("keystore.jks"), password);
+		KeyStoreKeyFactory factory = new KeyStoreKeyFactory(
+				new ClassPathResource("keystore.jks"), password);
 		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(factory.getKeyPair("test"));
+		assertEquals("foo", encryptor.decrypt(encryptor.encrypt("foo")));
+	}
+
+	@Test
+	public void initializeEncryptorFromPkcs12KeyStore() throws Exception {
+		char[] password = "letmein".toCharArray();
+		KeyStoreKeyFactory factory = new KeyStoreKeyFactory(
+				new ClassPathResource("keystore.pkcs12"), password);
+		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(
+				factory.getKeyPair("mytestkey"));
 		assertEquals("foo", encryptor.decrypt(encryptor.encrypt("foo")));
 	}
 

@@ -23,6 +23,7 @@ import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.spec.RSAPublicKeySpec;
 
 import org.springframework.core.io.Resource;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Dave Syer
@@ -34,10 +35,21 @@ public class KeyStoreKeyFactory {
 	private char[] password;
 	private KeyStore store;
 	private Object lock = new Object();
+	private String type;
 
 	public KeyStoreKeyFactory(Resource resource, char[] password) {
+		this(resource, password, type(resource));
+	}
+
+	private static String type(Resource resource) {
+		String ext = StringUtils.getFilenameExtension(resource.getFilename());
+		return ext == null ? "jks" : ext;
+	}
+
+	public KeyStoreKeyFactory(Resource resource, char[] password, String type) {
 		this.resource = resource;
 		this.password = password;
+		this.type = type;
 	}
 
 	public KeyPair getKeyPair(String alias) {
@@ -49,7 +61,7 @@ public class KeyStoreKeyFactory {
 			synchronized (lock) {
 				if (store == null) {
 					synchronized (lock) {
-						store = KeyStore.getInstance("jks");
+						store = KeyStore.getInstance(type);
 						store.load(resource.getInputStream(), this.password);
 					}
 				}
@@ -61,7 +73,8 @@ public class KeyStoreKeyFactory {
 			return new KeyPair(publicKey, key);
 		}
 		catch (Exception e) {
-			throw new IllegalStateException("Cannot load keys from store: " + resource, e);
+			throw new IllegalStateException("Cannot load keys from store: " + resource,
+					e);
 		}
 	}
 
