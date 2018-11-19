@@ -15,6 +15,7 @@
  */
 package org.springframework.security.rsa.crypto;
 
+import java.io.InputStream;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -62,7 +63,15 @@ public class KeyStoreKeyFactory {
 				if (store == null) {
 					synchronized (lock) {
 						store = KeyStore.getInstance(type);
-						store.load(resource.getInputStream(), this.password);
+						InputStream stream = resource.getInputStream();
+						try {
+							store.load(stream, this.password);
+						}
+						finally {
+							if (stream != null) {
+								stream.close();
+							}
+						}
 					}
 				}
 			}
