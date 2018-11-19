@@ -5,7 +5,7 @@
 
 	<groupId>org.springframework.security</groupId>
 	<artifactId>spring-security-rsa</artifactId>
-	<version>1.0.8.BUILD-SNAPSHOT</version>
+	<version>1.0.8.RELEASE</version>
 	<packaging>jar</packaging>
 	<name>spring-security-rsa</name>
 
@@ -78,13 +78,6 @@
 				</plugin>
 			</plugins>
 		</pluginManagement>
-		<extensions>
-			<extension>
-				<groupId>org.springframework.build</groupId>
-				<artifactId>aws-maven</artifactId>
-				<version>5.0.0.RELEASE</version>
-			</extension>
-		</extensions>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
