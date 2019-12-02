@@ -20,6 +20,9 @@ import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Dave Syer
@@ -33,6 +36,7 @@ public class KeyStoreKeyFactoryTests {
 		KeyStoreKeyFactory factory = new KeyStoreKeyFactory(
 				new ClassPathResource("keystore.jks"), password);
 		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(factory.getKeyPair("test"));
+		assertTrue("Should be able to decrypt", encryptor.canDecrypt());
 		assertEquals("foo", encryptor.decrypt(encryptor.encrypt("foo")));
 	}
 
@@ -43,7 +47,28 @@ public class KeyStoreKeyFactoryTests {
 				new ClassPathResource("keystore.pkcs12"), password);
 		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(
 				factory.getKeyPair("mytestkey"));
+		assertTrue("Should be able to decrypt", encryptor.canDecrypt());
 		assertEquals("foo", encryptor.decrypt(encryptor.encrypt("foo")));
+	}
+
+	@Test
+	public void initializeEncryptorFromTrustedCertificateInKeyStore() throws Exception {
+		char[] password = "foobar".toCharArray();
+		KeyStoreKeyFactory factory = new KeyStoreKeyFactory(
+				new ClassPathResource("keystore.jks"), password);
+		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(factory.getKeyPair("testcertificate"));
+		assertFalse("Should not be able to decrypt", encryptor.canDecrypt());
+		assertNotEquals("foo", encryptor.encrypt("foo"));
+	}
+
+	@Test
+	public void initializeEncryptorFromTrustedCertificateInPkcs12KeyStore() throws Exception {
+		char[] password = "letmein".toCharArray();
+		KeyStoreKeyFactory factory = new KeyStoreKeyFactory(
+				new ClassPathResource("keystore.pkcs12"), password);
+		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(factory.getKeyPair("mytestcertificate"));
+		assertFalse("Should not be able to decrypt", encryptor.canDecrypt());
+		assertNotEquals("foo", encryptor.encrypt("foo"));
 	}
 
 }

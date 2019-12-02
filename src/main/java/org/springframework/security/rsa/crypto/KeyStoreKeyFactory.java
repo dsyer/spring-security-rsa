@@ -19,7 +19,9 @@ import java.io.InputStream;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyStore;
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.cert.Certificate;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.spec.RSAPublicKeySpec;
 
@@ -28,6 +30,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * @author Dave Syer
+ * @author Tim Ysewyn
  *
  */
 public class KeyStoreKeyFactory {
@@ -76,9 +79,15 @@ public class KeyStoreKeyFactory {
 				}
 			}
 			RSAPrivateCrtKey key = (RSAPrivateCrtKey) store.getKey(alias, password);
-			RSAPublicKeySpec spec = new RSAPublicKeySpec(key.getModulus(),
-					key.getPublicExponent());
-			PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(spec);
+			Certificate certificate = store.getCertificate(alias);
+			PublicKey publicKey = null;
+			if (certificate != null) {
+				publicKey = certificate.getPublicKey();
+			} else if (key != null) {
+				RSAPublicKeySpec spec = new RSAPublicKeySpec(key.getModulus(),
+						key.getPublicExponent());
+				publicKey = KeyFactory.getInstance("RSA").generatePublic(spec);
+			}
 			return new KeyPair(publicKey, key);
 		}
 		catch (Exception e) {
