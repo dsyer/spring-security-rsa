@@ -15,13 +15,14 @@
  */
 package org.springframework.security.rsa.crypto;
 
-import static org.junit.Assert.assertEquals;
-
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * @author Dave Syer
@@ -111,6 +112,7 @@ public class RsaSecretEncryptorTests {
 	public void publicKeyCannotDecrypt() {
 		RsaSecretEncryptor encryptor = new RsaSecretEncryptor(
 				this.encryptor.getPublicKey());
+		assertFalse("Encryptor schould not be able to decrypt", encryptor.canDecrypt());
 		assertEquals("encryptor", encryptor.decrypt(encryptor.encrypt("encryptor")));
 	}
 

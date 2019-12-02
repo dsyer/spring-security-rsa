@@ -161,8 +161,7 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 
 	@Override
 	public String decrypt(String encryptedText) {
-		Assert.state(this.privateKey != null,
-				"Private key must be provided for decryption");
+		Assert.state(canDecrypt(), "Encryptor is not configured for decryption");
 		return new String(decrypt(Base64Utils.decode(encryptedText
 				.getBytes(this.defaultCharset))), this.charset);
 	}
@@ -174,6 +173,7 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 
 	@Override
 	public byte[] decrypt(byte[] encryptedByteArray) {
+		Assert.state(canDecrypt(), "Encryptor is not configured for decryption");
 		return decrypt(encryptedByteArray, this.privateKey, this.algorithm, this.salt,
 				this.gcm);
 	}
@@ -249,6 +249,10 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 		catch (Exception e) {
 			return false;
 		}
+	}
+
+	public boolean canDecrypt() {
+		return privateKey != null;
 	}
 
 }
