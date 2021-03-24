@@ -41,7 +41,7 @@
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcpkix-jdk15on</artifactId>
-			<version>1.64</version>
+			<version>1.68</version>
 		</dependency>
 
 		<dependency>
@@ -113,6 +113,9 @@
 						<phase>package</phase>
 					</execution>
 				</executions>
+				<configuration>
+					<failOnError>false</failOnError>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
