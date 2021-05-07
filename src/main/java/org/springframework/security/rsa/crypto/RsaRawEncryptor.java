@@ -18,8 +18,7 @@ package org.springframework.security.rsa.crypto;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
 import javax.crypto.Cipher;
@@ -28,6 +27,7 @@ import org.springframework.security.crypto.encrypt.BytesEncryptor;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.util.Assert;
 import org.springframework.util.Base64Utils;
+import sun.security.rsa.RSACore;
 
 /**
  * @author Dave Syer
@@ -41,9 +41,9 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 
 	private Charset charset;
 
-	private PublicKey publicKey;
+	private RSAPublicKey publicKey;
 
-	private PrivateKey privateKey;
+	private RSAPrivateKey privateKey;
 
 	private Charset defaultCharset;
 
@@ -56,26 +56,26 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 	}
 
 	public RsaRawEncryptor(KeyPair keyPair, RsaAlgorithm algorithm) {
-		this(DEFAULT_ENCODING, keyPair.getPublic(), keyPair.getPrivate(), algorithm);
+		this(DEFAULT_ENCODING, (RSAPublicKey) keyPair.getPublic(), (RSAPrivateKey) keyPair.getPrivate(), algorithm);
 	}
 
 	public RsaRawEncryptor(KeyPair keyPair) {
-		this(DEFAULT_ENCODING, keyPair.getPublic(), keyPair.getPrivate());
+		this(DEFAULT_ENCODING, (RSAPublicKey) keyPair.getPublic(), (RSAPrivateKey) keyPair.getPrivate());
 	}
 
 	public RsaRawEncryptor(String pemData) {
 		this(RsaKeyHelper.parseKeyPair(pemData));
 	}
 
-	public RsaRawEncryptor(PublicKey publicKey) {
+	public RsaRawEncryptor(RSAPublicKey publicKey) {
 		this(DEFAULT_ENCODING, publicKey, null);
 	}
 
-	public RsaRawEncryptor(String encoding, PublicKey publicKey, PrivateKey privateKey) {
+	public RsaRawEncryptor(String encoding, RSAPublicKey publicKey, RSAPrivateKey privateKey) {
 		this(encoding, publicKey, privateKey, RsaAlgorithm.DEFAULT);
 	}
 
-	public RsaRawEncryptor(String encoding, PublicKey publicKey, PrivateKey privateKey,
+	public RsaRawEncryptor(String encoding, RSAPublicKey publicKey, RSAPrivateKey privateKey,
 			RsaAlgorithm algorithm) {
 		this.charset = Charset.forName(encoding);
 		this.publicKey = publicKey;
@@ -113,7 +113,7 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 		return decrypt(encryptedByteArray, this.privateKey, this.algorithm);
 	}
 
-	private static byte[] encrypt(byte[] text, PublicKey key, RsaAlgorithm alg) {
+	private static byte[] encrypt(byte[] text, RSAPublicKey key, RsaAlgorithm alg) {
 		ByteArrayOutputStream output = new ByteArrayOutputStream(text.length);
 		try {
 			final Cipher cipher = Cipher.getInstance(alg.getJceName());
@@ -137,17 +137,18 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 		}
 	}
 
-	private static byte[] decrypt(byte[] text, PrivateKey key, RsaAlgorithm alg) {
+	private static byte[] decrypt(byte[] text, RSAPrivateKey key, RsaAlgorithm alg) {
 		ByteArrayOutputStream output = new ByteArrayOutputStream(text.length);
 		try {
 			final Cipher cipher = Cipher.getInstance(alg.getJceName());
-			int limit = Math.min(text.length, 128);
+			int maxLength = RSACore.getByteLength(key);
+			int limit = Math.min(text.length, maxLength);
 			int pos = 0;
 			while (pos < text.length) {
 				cipher.init(Cipher.DECRYPT_MODE, key);
 				cipher.update(text, pos, limit);
 				pos += limit;
-				limit = Math.min(text.length - pos, 128);
+				limit = Math.min(text.length - pos, maxLength);
 				byte[] buffer = cipher.doFinal();
 				output.write(buffer, 0, buffer.length);
 			}
