@@ -20,6 +20,7 @@ import java.nio.charset.Charset;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
 import javax.crypto.Cipher;
@@ -28,6 +29,7 @@ import org.springframework.security.crypto.encrypt.BytesEncryptor;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.util.Assert;
 import org.springframework.util.Base64Utils;
+import sun.security.rsa.RSACore;
 
 /**
  * @author Dave Syer
@@ -41,9 +43,9 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 
 	private Charset charset;
 
-	private PublicKey publicKey;
+	private RSAPublicKey publicKey;
 
-	private PrivateKey privateKey;
+	private RSAPrivateKey privateKey;
 
 	private Charset defaultCharset;
 
@@ -78,15 +80,15 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 	public RsaRawEncryptor(String encoding, PublicKey publicKey, PrivateKey privateKey,
 			RsaAlgorithm algorithm) {
 		this.charset = Charset.forName(encoding);
-		this.publicKey = publicKey;
-		this.privateKey = privateKey;
+		this.publicKey = (RSAPublicKey) publicKey;
+		this.privateKey = (RSAPrivateKey) privateKey;
 		this.defaultCharset = Charset.forName(DEFAULT_ENCODING);
 		this.algorithm = algorithm;
 	}
 
 	@Override
 	public String getPublicKey() {
-		return RsaKeyHelper.encodePublicKey((RSAPublicKey) this.publicKey, "application");
+		return RsaKeyHelper.encodePublicKey(this.publicKey, "application");
 	}
 
 	@Override
@@ -141,13 +143,14 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 		ByteArrayOutputStream output = new ByteArrayOutputStream(text.length);
 		try {
 			final Cipher cipher = Cipher.getInstance(alg.getJceName());
-			int limit = Math.min(text.length, 128);
+			int maxLength = RSACore.getByteLength((RSAPrivateKey) key);
+			int limit = Math.min(text.length, maxLength);
 			int pos = 0;
 			while (pos < text.length) {
 				cipher.init(Cipher.DECRYPT_MODE, key);
 				cipher.update(text, pos, limit);
 				pos += limit;
-				limit = Math.min(text.length - pos, 128);
+				limit = Math.min(text.length - pos, maxLength);
 				byte[] buffer = cipher.doFinal();
 				output.write(buffer, 0, buffer.length);
 			}
