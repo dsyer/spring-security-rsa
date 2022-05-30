@@ -25,6 +25,11 @@
 		</license>
 	</licenses>
 
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<java.version>8</java.version>
+	</properties>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
@@ -40,8 +45,8 @@
 
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
-			<artifactId>bcpkix-jdk15on</artifactId>
-			<version>1.69</version>
+			<artifactId>bcprov-jdk18on</artifactId>
+			<version>1.71</version>
 		</dependency>
 
 		<dependency>
@@ -66,7 +71,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
-
+					<version>2.22.2</version>
 					<configuration>
 						<skip>${skipTests}</skip>
 						<includes>
@@ -74,7 +79,6 @@
 						</includes>
 						<!-- <systemPropertyVariables> <jruby.home>${jruby.home}</jruby.home> </systemPropertyVariables> -->
 					</configuration>
-
 				</plugin>
 			</plugins>
 		</pluginManagement>
@@ -82,16 +86,16 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.2</version>
+				<version>3.10.1</version>
 				<configuration>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>2.1.2</version>
+				<version>3.2.1</version>
 				<executions>
 					<execution>
 						<id>attach-sources</id>
@@ -103,7 +107,9 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.4.0</version>
 				<executions>
 					<execution>
 						<id>javadoc</id>
@@ -115,18 +121,18 @@
 				</executions>
 				<configuration>
 					<failOnError>false</failOnError>
+					<source>${java.version}</source>
+					<doclint>none</doclint>
 				</configuration>
 			</plugin>
 		</plugins>
 	</build>
 
 	<distributionManagement>
-
 		<site>
 			<id>static.springframework.org</id>
 			<url>scp://static.springframework.org/var/www/domains/springframework.org/static/htdocs/spring-security/rsa</url>
 		</site>
-
 		<repository>
 			<id>repo.spring.io</id>
 			<name>Spring Release Repository</name>
@@ -137,7 +143,6 @@
 			<name>Spring Snapshot Repository</name>
 			<url>https://repo.spring.io/libs-snapshot-local</url>
 		</snapshotRepository>
-
 	</distributionManagement>
 
 	<profiles>
