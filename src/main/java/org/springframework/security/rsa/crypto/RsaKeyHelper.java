@@ -41,11 +41,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.bouncycastle.asn1.ASN1Sequence;
-
 import org.springframework.util.Base64Utils;
 
 /**
- * Reads RSA key pairs using BC provider classes but without the need to specify a crypto
+ * Reads RSA key pairs using BC provider classes but without the need to specify
+ * a crypto
  * provider or have BC added as one.
  *
  * @author Luke Taylor
@@ -57,18 +57,17 @@ class RsaKeyHelper {
 
 	private static final String BEGIN = "-----BEGIN";
 	private static final Pattern PEM_DATA = Pattern
-			.compile("-----BEGIN (.*)-----(.*)-----END (.*)-----", Pattern.DOTALL);
+			.compile(".*-----BEGIN (.*)-----(.*)-----END (.*)-----", Pattern.DOTALL);
 	private static final byte[] PREFIX = new byte[] { 0, 0, 0, 7, 's', 's', 'h', '-', 'r',
 			's', 'a' };
 
 	static KeyPair parseKeyPair(String pemData) {
-		Matcher m = PEM_DATA.matcher(pemData.trim());
+		Matcher m = PEM_DATA.matcher(pemData.replaceAll("\n", "").trim());
 
 		if (!m.matches()) {
 			try {
 				return new KeyPair(extractPublicKey(pemData), null);
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				throw new IllegalArgumentException(
 						"String is not PEM encoded data, nor a public key encoded for ssh");
 			}
@@ -98,29 +97,24 @@ class RsaKeyHelper {
 						key.getExponent2(), key.getCoefficient());
 				publicKey = fact.generatePublic(pubSpec);
 				privateKey = fact.generatePrivate(privSpec);
-			}
-			else if (type.equals("PUBLIC KEY")) {
+			} else if (type.equals("PUBLIC KEY")) {
 				KeySpec keySpec = new X509EncodedKeySpec(content);
 				publicKey = fact.generatePublic(keySpec);
-			}
-			else if (type.equals("RSA PUBLIC KEY")) {
+			} else if (type.equals("RSA PUBLIC KEY")) {
 				ASN1Sequence seq = ASN1Sequence.getInstance(content);
 				org.bouncycastle.asn1.pkcs.RSAPublicKey key = org.bouncycastle.asn1.pkcs.RSAPublicKey
 						.getInstance(seq);
 				RSAPublicKeySpec pubSpec = new RSAPublicKeySpec(key.getModulus(),
 						key.getPublicExponent());
 				publicKey = fact.generatePublic(pubSpec);
-			}
-			else {
+			} else {
 				throw new IllegalArgumentException(type + " is not a supported format");
 			}
 
 			return new KeyPair(publicKey, privateKey);
-		}
-		catch (InvalidKeySpecException e) {
+		} catch (InvalidKeySpecException e) {
 			throw new RuntimeException(e);
-		}
-		catch (NoSuchAlgorithmException e) {
+		} catch (NoSuchAlgorithmException e) {
 			throw new IllegalStateException(e);
 		}
 	}
@@ -131,8 +125,7 @@ class RsaKeyHelper {
 			byte[] bytesCopy = new byte[bytes.limit()];
 			System.arraycopy(bytes.array(), 0, bytesCopy, 0, bytes.limit());
 			return Base64Utils.decode(bytesCopy);
-		}
-		catch (CharacterCodingException e) {
+		} catch (CharacterCodingException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -141,8 +134,7 @@ class RsaKeyHelper {
 		try {
 			return UTF8.newDecoder().decode(ByteBuffer.wrap(Base64Utils.encode(bytes)))
 					.toString();
-		}
-		catch (CharacterCodingException e) {
+		} catch (CharacterCodingException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -152,8 +144,7 @@ class RsaKeyHelper {
 			final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
 			keyGen.initialize(1024);
 			return keyGen.generateKeyPair();
-		}
-		catch (NoSuchAlgorithmException e) {
+		} catch (NoSuchAlgorithmException e) {
 			throw new IllegalStateException(e);
 		}
 
@@ -177,8 +168,7 @@ class RsaKeyHelper {
 			}
 
 			return parseSSHPublicKey(encKey);
-		}
-		else if (!key.startsWith(BEGIN)) {
+		} else if (!key.startsWith(BEGIN)) {
 			// Assume it's the plain Base64 encoded ssh key without the
 			// "ssh-rsa" at the start
 			return parseSSHPublicKey(key);
@@ -213,8 +203,7 @@ class RsaKeyHelper {
 			stream.write(PREFIX);
 			writeBigInteger(stream, key.getPublicExponent());
 			writeBigInteger(stream, key.getModulus());
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new IllegalStateException("Cannot encode key", e);
 		}
 		output.append(base64Encode(stream.toByteArray()));
@@ -236,8 +225,7 @@ class RsaKeyHelper {
 			BigInteger n = new BigInteger(readBigInteger(in));
 
 			return createPublicKey(n, e);
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -246,8 +234,7 @@ class RsaKeyHelper {
 		try {
 			return (RSAPublicKey) KeyFactory.getInstance("RSA")
 					.generatePublic(new RSAPublicKeySpec(n, e));
-		}
-		catch (Exception ex) {
+		} catch (Exception ex) {
 			throw new RuntimeException(ex);
 		}
 	}
