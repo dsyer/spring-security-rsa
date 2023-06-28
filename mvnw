@@ -8,7 +8,7 @@
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+#    https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
@@ -238,7 +238,7 @@ else
     echo $MAVEN_ARGS | grep -q milestone && MAVEN_ARGS=$(echo $MAVEN_ARGS | sed -e 's/-Pmilestone//')
 fi
 
-if echo $VERSION | egrep -q 'RELEASE'; then
+if echo $VERSION | egrep -q '[0-9]*\.[0-9]*\.[0-9]*$|RELEASE'; then
     echo Activating \"central\" profile for version=\"$VERSION\"
     echo $MAVEN_ARGS | grep -q milestone || MAVEN_ARGS="$MAVEN_ARGS -Pcentral"
 else
