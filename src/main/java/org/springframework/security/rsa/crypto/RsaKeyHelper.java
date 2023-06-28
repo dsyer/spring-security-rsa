@@ -67,15 +67,14 @@ class RsaKeyHelper {
 		if (!m.matches()) {
 			try {
 				RSAPublicKey publicValue = extractPublicKey(pemData);
-				if (publicValue == null) {
-					throw new IllegalArgumentException(
-							"String is not PEM encoded data, nor a public key encoded for ssh");
+				if (publicValue != null) {
+					return new KeyPair(publicValue, null);
 				}
-				return new KeyPair(publicValue, null);
 			} catch (Exception e) {
-				throw new IllegalArgumentException(
-						"String is not PEM encoded data, nor a public key encoded for ssh");
+				// Ignore
 			}
+			throw new IllegalArgumentException(
+					"String is not PEM encoded data, nor a public key encoded for ssh");
 		}
 
 		String type = m.group(1);
