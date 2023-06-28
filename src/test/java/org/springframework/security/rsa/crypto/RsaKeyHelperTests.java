@@ -37,4 +37,26 @@ public class RsaKeyHelperTests {
 		assertEquals("RSA", result.getPrivate().getAlgorithm());
 	}
 
+	@Test
+	public void parseSpaceyKey() throws Exception {
+		String pem = StreamUtils.copyToString(new ClassPathResource("/spacey.pem", getClass()).getInputStream(),
+				Charset.forName("UTF-8"));
+		KeyPair result = RsaKeyHelper.parseKeyPair(pem);
+		assertTrue(result.getPrivate().getEncoded().length > 0);
+		assertEquals("RSA", result.getPrivate().getAlgorithm());
+	}
+
+	@Test
+	public void parseBadKey() throws Exception {
+		// ssh-keygen -m pem -b 1024 -f src/test/resources/fake.pem
+		String pem = StreamUtils.copyToString(new ClassPathResource("/bad.pem", getClass()).getInputStream(),
+				Charset.forName("UTF-8"));
+		try {
+			RsaKeyHelper.parseKeyPair(pem);
+			throw new IllegalStateException("Expected IllegalArgumentException");
+		} catch (IllegalArgumentException e) {
+			assertTrue(e.getMessage().contains("PEM"));
+		}
+	}
+
 }

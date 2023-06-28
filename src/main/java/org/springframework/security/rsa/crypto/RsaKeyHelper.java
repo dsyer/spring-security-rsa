@@ -62,11 +62,16 @@ class RsaKeyHelper {
 			's', 'a' };
 
 	static KeyPair parseKeyPair(String pemData) {
-		Matcher m = PEM_DATA.matcher(pemData.replaceAll("\n", "").trim());
+		Matcher m = PEM_DATA.matcher(pemData.replaceAll("\n *", "").trim());
 
 		if (!m.matches()) {
 			try {
-				return new KeyPair(extractPublicKey(pemData), null);
+				RSAPublicKey publicValue = extractPublicKey(pemData);
+				if (publicValue == null) {
+					throw new IllegalArgumentException(
+							"String is not PEM encoded data, nor a public key encoded for ssh");
+				}
+				return new KeyPair(publicValue, null);
 			} catch (Exception e) {
 				throw new IllegalArgumentException(
 						"String is not PEM encoded data, nor a public key encoded for ssh");
