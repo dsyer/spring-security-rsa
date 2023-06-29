@@ -24,12 +24,12 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
 import javax.crypto.Cipher;
+import sun.security.rsa.RSACore;
 
 import org.springframework.security.crypto.encrypt.BytesEncryptor;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.util.Assert;
 import org.springframework.util.Base64Utils;
-import sun.security.rsa.RSACore;
 
 /**
  * @author Dave Syer
@@ -139,18 +139,17 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 		}
 	}
 
-	private static byte[] decrypt(byte[] text, PrivateKey key, RsaAlgorithm alg) {
+	private static byte[] decrypt(byte[] text, RSAPrivateKey key, RsaAlgorithm alg) {
 		ByteArrayOutputStream output = new ByteArrayOutputStream(text.length);
 		try {
 			final Cipher cipher = Cipher.getInstance(alg.getJceName());
-			int maxLength = RSACore.getByteLength((RSAPrivateKey) key);
-			int limit = Math.min(text.length, maxLength);
+			int maxLength = RSACore.getByteLength(key);
 			int pos = 0;
 			while (pos < text.length) {
+				int limit = Math.min(text.length - pos, maxLength);
 				cipher.init(Cipher.DECRYPT_MODE, key);
 				cipher.update(text, pos, limit);
 				pos += limit;
-				limit = Math.min(text.length - pos, maxLength);
 				byte[] buffer = cipher.doFinal();
 				output.write(buffer, 0, buffer.length);
 			}
