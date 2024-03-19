@@ -24,7 +24,6 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
 import javax.crypto.Cipher;
-import sun.security.rsa.RSACore;
 
 import org.springframework.security.crypto.encrypt.BytesEncryptor;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
@@ -143,7 +142,9 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 		ByteArrayOutputStream output = new ByteArrayOutputStream(text.length);
 		try {
 			final Cipher cipher = Cipher.getInstance(alg.getJceName());
-			int maxLength = RSACore.getByteLength(key);
+			// Calculation from RSACore.getByteLength(RSAKey key)
+			int n = key.getModulus().bitLength();
+			int maxLength = (n + 7) >> 3;
 			int pos = 0;
 			while (pos < text.length) {
 				int limit = Math.min(text.length - pos, maxLength);
