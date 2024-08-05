@@ -23,6 +23,7 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 
@@ -32,7 +33,6 @@ import org.springframework.security.crypto.encrypt.Encryptors;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.security.crypto.keygen.KeyGenerators;
 import org.springframework.util.Assert;
-import org.springframework.util.Base64Utils;
 
 /**
  * @author Dave Syer
@@ -155,14 +155,14 @@ public class RsaSecretEncryptor implements BytesEncryptor, TextEncryptor, RsaKey
 
 	@Override
 	public String encrypt(String text) {
-		return new String(Base64Utils.encode(encrypt(text.getBytes(this.charset))),
+		return new String(Base64.getEncoder().encode(encrypt(text.getBytes(this.charset))),
 				this.defaultCharset);
 	}
 
 	@Override
 	public String decrypt(String encryptedText) {
 		Assert.state(canDecrypt(), "Encryptor is not configured for decryption");
-		return new String(decrypt(Base64Utils.decode(encryptedText
+		return new String(decrypt(Base64.getDecoder().decode(encryptedText
 				.getBytes(this.defaultCharset))), this.charset);
 	}
 

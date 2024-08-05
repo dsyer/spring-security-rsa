@@ -37,11 +37,11 @@ import java.security.spec.RSAPrivateCrtKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.springframework.util.Base64Utils;
 
 /**
  * Reads RSA key pairs using BC provider classes but without the need to specify
@@ -128,7 +128,7 @@ class RsaKeyHelper {
 			ByteBuffer bytes = UTF8.newEncoder().encode(CharBuffer.wrap(string));
 			byte[] bytesCopy = new byte[bytes.limit()];
 			System.arraycopy(bytes.array(), 0, bytesCopy, 0, bytes.limit());
-			return Base64Utils.decode(bytesCopy);
+			return Base64.getDecoder().decode(bytesCopy);
 		} catch (CharacterCodingException e) {
 			throw new RuntimeException(e);
 		}
@@ -136,7 +136,7 @@ class RsaKeyHelper {
 
 	static String base64Encode(byte[] bytes) {
 		try {
-			return UTF8.newDecoder().decode(ByteBuffer.wrap(Base64Utils.encode(bytes)))
+			return UTF8.newDecoder().decode(ByteBuffer.wrap(Base64.getEncoder().encode(bytes)))
 					.toString();
 		} catch (CharacterCodingException e) {
 			throw new RuntimeException(e);
