@@ -22,6 +22,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import sun.security.rsa.RSACore;
@@ -29,7 +30,6 @@ import sun.security.rsa.RSACore;
 import org.springframework.security.crypto.encrypt.BytesEncryptor;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
 import org.springframework.util.Assert;
-import org.springframework.util.Base64Utils;
 
 /**
  * @author Dave Syer
@@ -93,7 +93,7 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 
 	@Override
 	public String encrypt(String text) {
-		return new String(Base64Utils.encode(encrypt(text.getBytes(this.charset))),
+		return new String(Base64.getEncoder().encode(encrypt(text.getBytes(this.charset))),
 				this.defaultCharset);
 	}
 
@@ -101,7 +101,7 @@ public class RsaRawEncryptor implements BytesEncryptor, TextEncryptor, RsaKeyHol
 	public String decrypt(String encryptedText) {
 		Assert.state(this.privateKey != null,
 				"Private key must be provided for decryption");
-		return new String(decrypt(Base64Utils.decode(encryptedText
+		return new String(decrypt(Base64.getDecoder().decode(encryptedText
 				.getBytes(this.defaultCharset))), this.charset);
 	}
 
