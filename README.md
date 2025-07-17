@@ -1,3 +1,7 @@
+> ⚠️ ARCHIVED: The project is available for historical records, but is no
+> longer directly supported. All its features moved to spring-security-crypto
+> in version 6.3.0 (https://github.com/spring-projects/spring-security/issues/14202).
+
 This little project provides some RSA extensions to the base
 [spring-security-crypto](https://github.com/spring-projects/spring-security/tree/master/crypto)
 library. Currently supported: encryption and decryption with 2
